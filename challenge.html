@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>غرفة الهروب - تحدي الأقفال الأربعة</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Tajawal', sans-serif;
+    }
+
+    .escape-screen {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px 30px 20px;
+      background: linear-gradient(rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.55)),
+                  url('https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcTMXHZpH60gq6z5afijeqol3aNny0H-XmG6dNM7sKCfLLS8rzVbzzGiuCtlv0MPSft34BaN7iYfMASbAY0') center/cover no-repeat;
+    }
+
+    /* 🔴 أنيميشن تنبيه الطوارئ */
+    .alarm-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(239, 68, 68, 0.25);
+      pointer-events: none;
+      z-index: 5;
+      animation: redFlash 0.9s infinite alternate;
+    }
+
+    @keyframes redFlash {
+      from { background: rgba(239, 68, 68, 0.15); }
+      to { background: rgba(239, 68, 68, 0.45); }
+    }
+
+    /* 🏠 زر الخريطة - أعلى اليمين */
+    .btn-home {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      z-index: 50;
+      background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+      color: #fff;
+      border: 3px solid #fef3c7;
+      padding: 10px 22px;
+      border-radius: 20px;
+      font-size: 1.1rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-home:hover {
+      transform: translateY(-3px);
+      background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+    }
+
+    /* 🚨 تنبيه الطوارئ - المنتصف العالي */
+    .emergency-badge {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      background: rgba(220, 38, 38, 0.95);
+      border: 3px solid #fef2f2;
+      padding: 8px 30px;
+      border-radius: 25px;
+      color: #fff;
+      font-size: 1.25rem;
+      font-weight: 900;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.8);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+
+    .lab-stage {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-bottom: 10px;
+      z-index: 10;
+    }
+
+    /* 👩‍🏫 المعلمة - اليسار */
+    .teacher-zone {
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .teacher-container {
+      width: 190px;
+      height: 340px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      filter: drop-shadow(0 15px 25px rgba(0,0,0,0.7));
+    }
+
+    .teacher-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    /* 🚪🔒 مربع باب الأقفال (مخفي في البداية) */
+.center-door-container {
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.92);
+  border: 5px solid #f59e0b;
+  border-radius: 30px;
+  padding: 20px 30px;
+  box-shadow: 0 0 40px rgba(245, 158, 11, 0.5),
+              0 20px 50px rgba(0, 0, 0, 0.8);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  z-index: 20;
+  width: 480px;
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+.center-door-container.show-door {
+  display: flex;
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+    .door-title {
+      color: #38bdf8;
+      font-size: 1.2rem;
+      font-weight: 900;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .locks-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      width: 100%;
+    }
+
+    .lock-card {
+      background: rgba(30, 41, 59, 0.9);
+      border: 3px solid #64748b;
+      border-radius: 20px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .lock-card.active-lock {
+      border-color: #f59e0b;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+    }
+
+    .lock-card.active-lock:hover {
+      transform: translateY(-3px) scale(1.03);
+      background: rgba(51, 65, 85, 0.95);
+    }
+
+    .lock-card.unlocked-lock {
+      border-color: #22c55e;
+      background: rgba(20, 83, 45, 0.8);
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+    }
+
+    .lock-icon {
+      font-size: 2.2rem;
+    }
+
+    .lock-name {
+      color: #f8fafc;
+      font-size: 0.95rem;
+      font-weight: 900;
+    }
+
+    .lock-progress {
+      color: #38bdf8;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    /* 👧 الطالبة - اليمين */
+    .students-zone {
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .student-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .nametag-small {
+      background: #f59e0b;
+      color: #fff;
+      border: 2px solid #fff;
+      padding: 4px 15px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 900;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      margin-bottom: 6px;
+    }
+
+    .student-container {
+      width: 180px;
+      height: 320px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      filter: drop-shadow(0 12px 18px rgba(0,0,0,0.6));
+    }
+
+    .student-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    /* 💬 مربع الحوار السفلي */
+    .dialogue-dock {
+      z-index: 25;
+      width: 92%;
+      max-width: 1000px;
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border: 5px solid #38bdf8;
+      border-radius: 30px;
+      padding: 18px 28px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 5px;
+    }
+
+    .dialogue-top {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .speaker-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #0284c7;
+      padding: 6px 16px;
+      border-radius: 18px;
+      border: 2px solid #e0f2fe;
+      color: #fff;
+      font-weight: 900;
+      font-size: 1.1rem;
+      white-space: nowrap;
+    }
+
+    .dialogue-text {
+      color: #f8fafc;
+      font-size: 1.15rem;
+      font-weight: 700;
+      flex: 1;
+      line-height: 1.6;
+    }
+
+    .actions-row {
+      display: flex;
+      direction: ltr;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 2px solid rgba(255,255,255,0.1);
+      padding-top: 10px;
+    }
+
+    .nav-buttons {
+      display: flex;
+      direction: rtl;
+      gap: 12px;
+    }
+
+    .btn-next {
+      background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: 900;
+      padding: 8px 30px;
+      border: 3px solid #bbf7d0;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #14532d;
+    }
+
+    /* ❓ نافذة الأسئلة والتحدي */
+    .quiz-modal, .success-modal {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .quiz-card, .success-card {
+      background: #1e293b;
+      border: 4px solid #38bdf8;
+      border-radius: 30px;
+      padding: 30px 35px;
+      width: 90%;
+      max-width: 550px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+      position: relative;
+    }
+
+    .success-card {
+      border-color: #22c55e;
+      background: linear-gradient(180deg, #0f172a 0%, #14532d 100%);
+      animation: popSuccess 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popSuccess {
+      from { transform: scale(0.7); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .quiz-header {
+      color: #f59e0b;
+      font-size: 1.1rem;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .quiz-question {
+      color: #fff;
+      font-size: 1.25rem;
+      font-weight: 900;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .option-btn {
+      background: rgba(51, 65, 85, 0.9);
+      color: #fff;
+      border: 2px solid #64748b;
+      padding: 12px 20px;
+      border-radius: 18px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-align: right;
+    }
+
+    .option-btn:hover {
+      border-color: #38bdf8;
+      background: rgba(2, 132, 199, 0.3);
+    }
+
+    .option-btn.correct-btn {
+      background: #22c55e !important;
+      border-color: #bbf7d0 !important;
+      color: #fff !important;
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.8) !important;
+      transform: scale(1.02);
+    }
+
+    .option-btn.wrong-btn {
+      background: #ef4444 !important;
+      border-color: #fca5a5 !important;
+      color: #fff !important;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.8) !important;
+    }
+
+    .feedback-msg {
+      margin-top: 15px;
+      font-size: 1.1rem;
+      font-weight: 900;
+      padding: 10px;
+      border-radius: 15px;
+      display: none;
+    }
+
+    .feedback-msg.error-msg {
+      background: rgba(239, 68, 68, 0.2);
+      border: 2px solid #ef4444;
+      color: #fca5a5;
+      display: block;
+      animation: shake 0.3s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+  </style>
+</head>
+<body>
+
+  <audio id="audioPlayer"></audio>
+
+  <div class="alarm-overlay"></div>
+
+  <button class="btn-home" onclick="goHome()">🏠 الخريطة</button>
+
+  <div class="emergency-badge">
+    <span>🚨</span>
+    <span>نظام الطوارئ: تفعيل بروتوكول الهروب!</span>
+  </div>
+
+  <div class="escape-screen">
+    <div class="lab-stage">
+
+      <!-- 👩‍🏫 المعلمة (اليسار) -->
+      <div class="teacher-zone">
+        <div class="teacher-container">
+          <img src="images/teacher.png" alt="المعلمة">
+        </div>
+      </div>
+
+      <!-- 🚪🔒 مربع باب الأقفال (تمت إضافة id="doorContainer") -->
+      <div class="center-door-container" id="doorContainer">
+        <div class="door-title">
+          <span>🚪</span>
+          <span>باب الخروج الرئيسي - اجمع المفاتيح الأربعة!</span>
+        </div>
+
+        <div class="locks-grid">
+          <div class="lock-card active-lock" id="lockCard1" onclick="openLockQuiz(1)">
+            <div class="lock-icon" id="lockIcon1">🔒</div>
+            <div class="lock-name">القفل الأول</div>
+            <div class="lock-progress" id="lockProgress1">0 / 4 أسئلة</div>
+          </div>
+
+          <div class="lock-card" id="lockCard2" onclick="openLockQuiz(2)">
+            <div class="lock-icon" id="lockIcon2">🔒</div>
+            <div class="lock-name">القفل الثاني</div>
+            <div class="lock-progress" id="lockProgress2">0 / 4 أسئلة</div>
+          </div>
+
+          <div class="lock-card" id="lockCard3" onclick="openLockQuiz(3)">
+            <div class="lock-icon" id="lockIcon3">🔒</div>
+            <div class="lock-name">القفل الثالث</div>
+            <div class="lock-progress" id="lockProgress3">0 / 4 أسئلة</div>
+          </div>
+
+          <div class="lock-card" id="lockCard4" onclick="openLockQuiz(4)">
+            <div class="lock-icon" id="lockIcon4">🔒</div>
+            <div class="lock-name">القفل الرابع</div>
+            <div class="lock-progress" id="lockProgress4">0 / 4 أسئلة</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 👧 الطالبة (اليمين) -->
+      <div class="students-zone">
+        <div class="student-card">
+          <div class="nametag-small" id="playerNametag">منة (أنت)</div>
+          <div class="student-container">
+            <img id="playerAvatar" src="images/girl_lab.png" alt="اللاعب">
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 💬 مربع الحوار -->
+    <div class="dialogue-dock">
+      <div class="dialogue-top">
+        <div class="speaker-badge">
+          <span>👩‍🏫</span>
+          <span>المعلمة</span>
+        </div>
+        <div class="dialogue-text" id="introDialogueText">
+          سمعتوا صوت الإنذار؟ واضح إن فيه حاجة حصلت في المعمل! 🚨
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <div class="nav-buttons">
+          <button class="btn-next" onclick="nextIntroStep()" id="introNextBtn">⬅️ التالي</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ❓ نافذة الأسئلة المنبثقة -->
+  <div class="quiz-modal" id="quizModal">
+    <div class="quiz-card">
+      <div class="quiz-header" id="quizTitle">تحدي القفل الأول (السؤال 1 من 4)</div>
+      <div class="quiz-question" id="quizQuestionText">جاري تحميل السؤال...</div>
+      <div class="options-grid" id="optionsContainer"></div>
+      <div class="feedback-msg" id="feedbackMsg"></div>
+    </div>
+  </div>
+
+  <!-- 🎉 نافذة التهنئة المنبثقة -->
+  <div class="success-modal" id="successModal">
+    <div class="success-card">
+      <h2 style="color: #facc15; font-size: 2.2rem; margin-bottom: 15px;" id="successTitle">🎉 أحسنت يا بطل!</h2>
+      <p style="color: #fff; font-size: 1.3rem; line-height: 1.6;" id="successText">
+        لقد تمكنت من حل التحديات بنجاح وحصلت على المفتاح!
+      </p>
+    </div>
+  </div>
+
+  <script>
+    let currentLock = 1;
+    let currentQuestionIndex = 0;
+    let unlockedLocksCount = parseInt(localStorage.getItem('unlockedLocksCount') || '0', 10);
+    let currentShuffledOptions = [];
+    let isAnswering = false;
+
+    function playSFX(fileName) {
+      const audio = document.getElementById('audioPlayer');
+      audio.src = `audio/${fileName}`;
+      audio.play().catch(() => {});
+    }
+
+    window.onload = function() {
+  const door = document.getElementById('doorContainer');
+  door.classList.remove('show-door');
+  door.style.display = 'none';
+
+  const savedImage = localStorage.getItem('playerImage');
+  const savedName = localStorage.getItem('playerName');
+
+  if (savedImage) document.getElementById('playerAvatar').src = savedImage;
+  if (savedName) document.getElementById('playerNametag').textContent = savedName + " (أنت)";
+
+  updateLocksUI();
+  playSFX('1.mp3');
+};
+
+    function updateLocksUI() {
+      unlockedLocksCount = parseInt(localStorage.getItem('unlockedLocksCount') || '0', 10);
+
+      for (let i = 1; i <= 4; i++) {
+        const card = document.getElementById(`lockCard${i}`);
+        const icon = document.getElementById(`lockIcon${i}`);
+        const progress = document.getElementById(`lockProgress${i}`);
+
+        if (i <= unlockedLocksCount) {
+          card.classList.remove('active-lock');
+          card.classList.add('unlocked-lock');
+          icon.textContent = '🔑';
+          progress.textContent = 'تم الفتح! 🔑';
+        } else if (i === unlockedLocksCount + 1) {
+          card.classList.remove('unlocked-lock');
+          card.classList.add('active-lock');
+          icon.textContent = '🔒';
+          progress.textContent = '0 / 4 أسئلة';
+        } else {
+          card.classList.remove('active-lock', 'unlocked-lock');
+          icon.textContent = '🔒';
+          progress.textContent = '0 / 4 أسئلة';
+        }
+      }
+    }
+
+    const introSteps = [
+      "سمعتوا صوت الإنذار؟ واضح إن فيه حاجة حصلت في المعمل! 🚨",
+      "باب الخروج اتقفل، مش هنقدر نخرج غير لما نفعّل نظام الطوارئ. علشان نفتح الباب، لازم نستخدم اللي اتعلمناه عن العظام والمفاصل والعضلات وحركة الحيوانات!",
+      "قدامنا أربع أقفال، وكل قفل وراه تحدّي. لو حلّيتوه صح، هتكسبوا مفتاح يساعدنا نفتح باب الخروج.",
+      "يلا يا أبطال، ورّوني هتقدروا تحلّوا التحديات وتخرجوا من المعمل ! 💪🔑"
+    ];
+
+    let currentIntroIndex = 0;
+
+    
+function nextIntroStep() {
+  const dialogueText = document.getElementById('introDialogueText');
+  const nextBtn = document.getElementById('introNextBtn');
+  const door = document.getElementById('doorContainer');
+
+  if (currentIntroIndex < introSteps.length - 1) {
+    currentIntroIndex++;
+
+    dialogueText.textContent = introSteps[currentIntroIndex];
+    playSFX(`${currentIntroIndex + 1}.mp3`);
+
+    if (currentIntroIndex === introSteps.length - 1) {
+      nextBtn.textContent = "ابدأ التحدي 🗝️";
+    }
+
+    return;
+  }
+
+  door.style.display = 'flex';
+
+  requestAnimationFrame(() => {
+    door.classList.add('show-door');
+  });
+
+  nextBtn.style.display = 'none';
+  dialogueText.textContent =
+    "يلا يا أبطال! انقروا على القفل الأول وابدأوا التحدي! 🔑";
+}
+
+    const lockQuizzes = {
+      1: [
+        { q: "ما الذي يعطي جسم الإنسان الدعامة والشكل الصلب؟", opts: ["العظام", "المعدة", "الجلد"], ans: 0 },
+        { q: "ترتبط العضلات بالعظام عن طريق...؟", opts: ["الأوتار", "الشعر", "الأسنان"], ans: 0 },
+        { q: "تستطيع العضلات تحريك العظام عن طريق...؟", opts: ["السحب (الانقباض)", "الدفع فقط", "الاهتزاز"], ans: 0 },
+        { q: "عند ثني الذراع تنقبض العضلة...؟", opts: ["الأمامية", "الخلفية", "السفلية"], ans: 0 }
+      ],
+      2: [
+        { q: "ما الموضِع الذي تلتقي فيه عظمتان أو أكثر؟", opts: ["المفصل", "القلب", "الجمجمة"], ans: 0 },
+        { q: "تساعد الغضاريف داخل المفاصل على...؟", opts: ["تقليل الاحتكاك", "زيادة الوزن", "تنفس الجسم"], ans: 0 },
+        { q: "مفصل الكتف يتحرك في...؟", opts: ["جميع الاتجاهات", "اتجاه واحد فقط", "لا يتحرك"], ans: 0 },
+        { q: "ما العضو الحيوية الذي تحميه العظام داخل الجمجمة؟", opts: ["المخ", "المعدة", "القدم"], ans: 0 }
+      ],
+      3: [
+        { q: "عندما تنقبض العضلة تكون...؟", opts: ["أقصر وأكثر صلابة", "أطول وأضعف", "شفافة"], ans: 0 },
+        { q: "تعمل العضلات المسؤولة عن الحركة دائماً في...؟", opts: ["أزواج (زوجية)", "فرادى", "مجموعات من عشرة"], ans: 0 },
+        { q: "عند فرد الذراع تماماً فإن العضلة الخلفية...؟", opts: ["تنقبض", "تنبسط", "تختفي"], ans: 0 },
+        { q: "العظام وحدها بدون عضلات تستطيع...؟", opts: ["لا تستطيع الحركة", "الركض سريعاً", "القفز عالياً"], ans: 0 }
+      ],
+      4: [
+        { q: "تتحرك معظم الحيوانات باستخدام...؟", opts: ["العظام والعضلات", "المعيشة فقط", "الهواء فقط"], ans: 0 },
+        { q: "تختلف هياكل الحيوانات العظمية حسب...؟", opts: ["طريقة حركتها ومعيشتها", "لون شعرها", "اسمها"], ans: 0 },
+        { q: "هيكل الحيوان الذي يقفز يختلف عن هيكل الحيوان الذي...؟", opts: ["يطير أو يسبح", "ينام", "يشرب"], ans: 0 },
+        { q: "تتشابه بعض العظام بين الإنسان والحيوانات في...؟", opts: ["الوظيفة والتركيب العام", "الحجم تماماً", "اللون الداخلي"], ans: 0 }
+      ]
+    };
+
+    function openLockQuiz(lockNum) {
+      if (lockNum > unlockedLocksCount + 1) {
+        showSuccessModal(
+          "🔒 قفل مغلق!",
+          "يرجى حل القفل السابق أولاً للحصول على مفتاحه!",
+          false
+        );
+        return;
+      }
+      if (lockNum <= unlockedLocksCount) {
+        showSuccessModal(
+          "🔑 قفل مفتوح!",
+          "لقد فتحتِ هذا القفل وحصلتِ على مفتاحه بالفعل! 🎉",
+          false
+        );
+        return;
+      }
+
+      currentLock = lockNum;
+      currentQuestionIndex = 0;
+      showQuestion();
+      document.getElementById('quizModal').style.display = 'flex';
+    }
+
+    function showQuestion() {
+      isAnswering = false;
+      const feedbackMsg = document.getElementById('feedbackMsg');
+      feedbackMsg.className = 'feedback-msg';
+      feedbackMsg.style.display = 'none';
+
+      const questions = lockQuizzes[currentLock];
+      const qData = questions[currentQuestionIndex];
+
+      document.getElementById('quizTitle').textContent = `تحدي القفل ${currentLock} (السؤال ${currentQuestionIndex + 1} من 4)`;
+      document.getElementById('quizQuestionText').textContent = qData.q;
+
+      currentShuffledOptions = qData.opts.map((opt, idx) => ({
+        text: opt,
+        isCorrect: idx === qData.ans
+      }));
+
+      currentShuffledOptions.sort(() => Math.random() - 0.5);
+
+      const optsContainer = document.getElementById('optionsContainer');
+      optsContainer.innerHTML = '';
+
+      currentShuffledOptions.forEach((optObj, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.id = `optBtn_${index}`;
+        btn.textContent = optObj.text;
+        btn.onclick = () => checkAnswer(optObj.isCorrect, btn);
+        optsContainer.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(isCorrect, selectedBtn) {
+      if (isAnswering) return;
+      isAnswering = true;
+
+      const feedbackMsg = document.getElementById('feedbackMsg');
+
+      if (!isCorrect) {
+        playSFX('wrong.mp3');
+        selectedBtn.classList.add('wrong-btn');
+        feedbackMsg.textContent = "❌ إجابة خاطئة! حاولي مرة أخرى بتركيز.";
+        feedbackMsg.className = "feedback-msg error-msg";
+
+        setTimeout(() => {
+          selectedBtn.classList.remove('wrong-btn');
+          isAnswering = false;
+        }, 1200);
+
+        return;
+      }
+
+      playSFX('correct.mp3');
+      selectedBtn.classList.add('correct-btn');
+
+      setTimeout(() => {
+        currentQuestionIndex++;
+
+        if (currentQuestionIndex < lockQuizzes[currentLock].length) {
+          showQuestion();
+        } else {
+          unlockedLocksCount = Math.max(unlockedLocksCount, currentLock);
+          localStorage.setItem('unlockedLocksCount', String(unlockedLocksCount));
+          updateLocksUI();
+
+          document.getElementById('quizModal').style.display = 'none';
+
+          if (unlockedLocksCount < 4) {
+            showSuccessModal(
+              "🔑 تم فتح القفل بنجاح!",
+              `🎉 رائع جداً! لقد حصلتِ على المفتاح رقم (${currentLock}). القفل التالي أصبح متاحاً الآن!`,
+              false
+            );
+          } else {
+            playSFX('succes.mp3');
+            showSuccessModal(
+              "🏆 مبروك يا أبطال! تم الهروب!",
+              "🥳 رائعة جداً! لقد جمعتِ المفاتيح الأربعة وتم فتح باب المعمل بنجاح والهروب بنجاح تام!",
+              true
+            );
+          }
+        }
+      }, 1500);
+    }
+
+    function showSuccessModal(title, text, isFinal) {
+      document.getElementById('successTitle').textContent = title;
+      document.getElementById('successText').textContent = text;
+      document.getElementById('successModal').style.display = 'flex';
+
+      setTimeout(() => {
+        document.getElementById('successModal').style.display = 'none';
+        if (isFinal) {
+          localStorage.removeItem('unlockedLocksCount');
+          goHome();
+        }
+      }, 2500);
+    }
+
+    function goHome() {
+      window.location.href = 'levels.html';
+    }
+  </script>
+</body>
+</html>
